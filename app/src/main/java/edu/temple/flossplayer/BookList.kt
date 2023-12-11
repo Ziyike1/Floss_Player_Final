@@ -21,4 +21,7 @@ class BookList {
     operator fun get(index: Int) = bookList[index]
 
     fun size() = bookList.size
+    fun find(predicate: (Book) -> Boolean): Book? {
+        return bookList.find(predicate)
+    }
 }

@@ -1,9 +1,14 @@
 package edu.temple.flossplayer
 
+import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import org.json.JSONArray
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.net.URL
 
 class BookViewModel : ViewModel() {
 
@@ -87,5 +92,28 @@ class BookViewModel : ViewModel() {
     // A trivial update used to indirectly notify observers that the Booklist has changed
     private fun notifyUpdatedBookList() {
         updatedBookList.value = updatedBookList.value?.plus(1)
+    }
+
+    fun downloadBook(bookId: Int, context: Context, onDownloadComplete: (File?) -> Unit) {
+        val downloadURL = "https://kamorris.com/lab/flossplayer/downloadbook.php?id=$bookId"
+        val bookFile = File(context.filesDir, "$bookId.mp3")
+
+        Thread {
+            try {
+                URL(downloadURL).openStream().use { input ->
+                    FileOutputStream(bookFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                onDownloadComplete(bookFile)
+            } catch (e: IOException) {
+                e.printStackTrace()
+                onDownloadComplete(null)
+            }
+        }.start()
+    }
+
+    fun updateBookFile(bookId: Int, file: File?) {
+        bookList.find { it.book_id == bookId }?.bookFile = file
     }
 }
