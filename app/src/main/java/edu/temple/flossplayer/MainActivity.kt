@@ -2,6 +2,7 @@ package edu.temple.flossplayer
 
 import android.app.SearchManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import androidx.appcompat.app.AppCompatActivity
@@ -20,6 +21,10 @@ import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
 import edu.temple.flossaudioplayer.AudioBookPlayerService
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.net.URL
 
 class MainActivity : AppCompatActivity(), BookControlFragment.BookControlInterface {
 
@@ -195,6 +200,50 @@ class MainActivity : AppCompatActivity(), BookControlFragment.BookControlInterfa
             }
         }
 
+    }
+
+    fun onBookSelected(book: Book, context: Context) {
+        if (book.bookFile == null) {
+            downloadBook(book.book_id, context) { file ->
+                bookViewModel.updateBookFile(book.book_id, file)
+                book.bookFile = file
+                playBookFromFile(book)
+            }
+        } else {
+            playBookFromFile(book)
+        }
+    }
+
+
+    private fun playBookFromFile(book: Book) {
+        mediaControllerBinder?.let { binder ->
+            if (binder.isPlaying) {
+                binder.pause()
+            }
+            binder.play(book)
+        } ?: run {
+            Toast.makeText(this, "Play service not ready", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
+    private fun downloadBook(bookId: Int, context: Context, onDownloadComplete: (File?) -> Unit) {
+        val downloadURL = "https://kamorris.com/lab/flossplayer/downloadbook.php?id=$bookId"
+        val bookFile = File(context.filesDir, "$bookId.mp3")
+
+        Thread {
+            try {
+                URL(downloadURL).openStream().use { input ->
+                    FileOutputStream(bookFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                onDownloadComplete(bookFile)
+            } catch (e: IOException) {
+                e.printStackTrace()
+                onDownloadComplete(null)
+            }
+        }.start()
     }
 
     private fun searchBooks(searchTerm: String) {

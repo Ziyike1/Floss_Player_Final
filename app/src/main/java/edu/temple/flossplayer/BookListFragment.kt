@@ -39,6 +39,7 @@ class BookListFragment : Fragment() {
             bookViewModel.setSelectedBook(book)
             // Inform the activity of the selection so as to not have the event replayed
             // when the activity is restarted
+            (activity as? MainActivity)?.onBookSelected(book, requireContext())
         }
 
         with(view as RecyclerView) {
