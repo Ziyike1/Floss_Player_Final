@@ -255,32 +255,58 @@ class MainActivity : AppCompatActivity(), BookControlFragment.BookControlInterfa
 
 
     private fun searchBooks(searchTerm: String) {
+        Log.d("SearchBooks", "Starting search for: $searchTerm")
         requestQueue.add(
             JsonArrayRequest(searchURL + searchTerm,
-                { bookViewModel.updateBooks(it) },
-                { Toast.makeText(this, it.networkResponse.toString(), Toast.LENGTH_SHORT).show() })
+                { response ->
+                    Log.d("SearchBooks", "Search results: $response")
+                    bookViewModel.updateBooks(response)
+                },
+                { error ->
+                    Log.e("SearchBooks", "Error in search: ${error.toString()}")
+                    Toast.makeText(this, error.networkResponse.toString(), Toast.LENGTH_SHORT).show()
+                })
         )
     }
 
-    override fun playBook() {
-        bookViewModel.getSelectedBook()?.value?.apply {
-            mediaControllerBinder?.run {
-                bookViewModel.setBookPlayed(false)
-                play(this@apply)
 
-                // Start service to ensure it keeps playing even if the activity is destroyed
-                startService(bookServiceIntent)
+    override fun playBook() {
+        bookViewModel.getSelectedBook()?.value?.let { book ->
+            mediaControllerBinder?.run {
+                if (book.currentPosition > 0) {
+                    val positionInMilliseconds = book.currentPosition * 1000
+                    seekTo(positionInMilliseconds)
+                    Log.d("MediaPlayer", "Resuming from position: ${positionInMilliseconds}ms (${book.currentPosition}s)")
+                } else {
+                    Log.d("MediaPlayer", "Starting playback from the beginning for book: ${book.title}")
+                }
+                play(book)
+            }
+        } ?: Log.e("MediaPlayer", "No selected book to play")
+    }
+
+
+
+
+
+
+    override fun pauseBook() {
+        mediaControllerBinder?.run {
+            if (isPlaying) {
+                val progressPercentage = progressSeekBar.progress
+                bookViewModel.getSelectedBook()?.value?.let { book ->
+                    val currentPosition = (progressPercentage.toFloat() / 100) * book.duration * 1000
+                    Log.d("MediaPlayer", "Pause at position: ${currentPosition.toInt()}s")
+                    bookViewModel.updateBookPosition(book.book_id, currentPosition.toInt())
+                }
+                pause()
             }
         }
     }
 
-    override fun pauseBook() {
-        mediaControllerBinder?.run {
-            if (isPlaying) stopService(bookServiceIntent)
-            else startService(bookServiceIntent)
-            pause()
-        }
-    }
+
+
+
 
     override fun onDestroy() {
         unbindService(bookServiceConnection)

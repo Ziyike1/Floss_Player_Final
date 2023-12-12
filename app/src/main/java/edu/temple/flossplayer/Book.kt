@@ -16,6 +16,7 @@ data class Book (val book_id: Int,
                  val author: String,
                  val coverUri: String,
                  val duration: Int,
+                 var currentPosition: Int = 0,
                  var bookFile: File? = null
 ) : AudioBookPlayerService.AudioBook, AudioBookPlayerService.FileAudioBook {
 

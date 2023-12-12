@@ -116,4 +116,12 @@ class BookViewModel : ViewModel() {
     fun updateBookFile(bookId: Int, file: File?) {
         bookList.find { it.book_id == bookId }?.bookFile = file
     }
+
+    fun updateBookPosition(bookId: Int, position: Int) {
+        bookList.find { it.book_id == bookId }?.let { book ->
+            book.currentPosition = position
+            selectedBook?.value = book
+        }
+    }
+
 }
