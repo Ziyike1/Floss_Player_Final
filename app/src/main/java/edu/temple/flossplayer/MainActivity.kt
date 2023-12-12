@@ -219,17 +219,23 @@ class MainActivity : AppCompatActivity(), BookControlFragment.BookControlInterfa
         mediaControllerBinder?.let { binder ->
             if (binder.isPlaying) {
                 binder.pause()
+                Log.d("MediaPlayer", "play stop")
             }
+            Log.d("MediaPlayer", "start play: ${book.title}")
             binder.play(book)
         } ?: run {
+            Log.e("MediaPlayer", "play service not ready")
             Toast.makeText(this, "Play service not ready", Toast.LENGTH_SHORT).show()
         }
     }
 
 
+
     private fun downloadBook(bookId: Int, context: Context, onDownloadComplete: (File?) -> Unit) {
         val downloadURL = "https://kamorris.com/lab/flossplayer/downloadbook.php?id=$bookId"
         val bookFile = File(context.filesDir, "$bookId.mp3")
+
+        Log.d("DownloadBook", "start download book ID: $bookId")
 
         Thread {
             try {
@@ -238,13 +244,15 @@ class MainActivity : AppCompatActivity(), BookControlFragment.BookControlInterfa
                         input.copyTo(output)
                     }
                 }
+                Log.d("DownloadBook", "download finish: $bookFile")
                 onDownloadComplete(bookFile)
             } catch (e: IOException) {
-                e.printStackTrace()
+                Log.e("DownloadBook", "download failure: ${e.message}")
                 onDownloadComplete(null)
             }
         }.start()
     }
+
 
     private fun searchBooks(searchTerm: String) {
         requestQueue.add(
